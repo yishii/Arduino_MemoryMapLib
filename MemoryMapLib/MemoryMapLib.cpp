@@ -5,7 +5,6 @@
 //
 //
 // The Memory-map protocol is originally created by JS Robotics.
-//
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +18,7 @@
 #endif
 
 #include "MemoryMapLib.h"
+#include "CommunicationStream.h"
 
 int MemoryMap::checkPacketHeader(MEMMAP_Message& msg)
 {
@@ -68,9 +68,9 @@ int MemoryMap::checkPacketSum(MEMMAP_Message& msg)
 
 int MemoryMap::sendMessage(MEMMAP_Message& msg)
 {
-    mHardwareSerial->write(msg.Raw,5);
-    mHardwareSerial->write(msg.Field.data,msg.Field.Length);
-    mHardwareSerial->write(msg.Field.Sum);
+    mCommunicationStream->write(msg.Raw,5);
+    mCommunicationStream->write(msg.Field.data,msg.Field.Length);
+    mCommunicationStream->write(&(msg.Field.Sum),1);
 }
 
 int MemoryMap::processCommand(MEMMAP_Message& msg)
@@ -258,15 +258,15 @@ MemoryMap::MemoryMap()
 	memcpy(&(MemoryMapTable[i]),(void*)&initialCommand,sizeof(initialCommand));
     }
 
-    mHardwareSerial = NULL;
+    mCommunicationStream = NULL;
 }
 
-int MemoryMap::setStreamInterface(HardwareSerial* serial)
+int MemoryMap::setStreamInterface(CommunicationStream* stream)
 {
     int result = false;
 
-    if(serial != NULL){
-	mHardwareSerial = serial;
+    if(stream != NULL){
+	mCommunicationStream = stream;
 	result = true;
     }
 
@@ -285,22 +285,22 @@ void MemoryMap::poll(void)
     
     switch(serial_receive_state){
     case SRECV_IDLE:
-	if(mHardwareSerial->available() != 0){
+	if(mCommunicationStream->available() != 0){
 	    serial_receive_state = SRECV_RECEIVING_HEADER;
 	    startReceiveTime = millis();
 	}
 	break;
 	
     case SRECV_RECEIVING_HEADER:
-	if(mHardwareSerial->available() >= 5){
+	if(mCommunicationStream->available() >= 5){
 	    for(counter=0;counter<5;counter++){
-		packet.Raw[counter] = mHardwareSerial->read();
+		packet.Raw[counter] = mCommunicationStream->read();
 	    }
 	    if(checkPacketHeader(packet) == true){
 		serial_receive_state = SRECV_RECEIVING;
 	    } else {
 		// data that received might be broken -> flush
-		mHardwareSerial->flush();
+		mCommunicationStream->flush();
 		serial_receive_state = SRECV_IDLE;
 	    }
 	}
@@ -308,30 +308,30 @@ void MemoryMap::poll(void)
 	
     case SRECV_RECEIVING:
 	if(isReadOperation(packet) == false){
-	    if((mHardwareSerial->available()) >= (packet.Field.Length+1)){
+	    if((mCommunicationStream->available()) >= (packet.Field.Length+1)){
 		for(counter=0;counter < (packet.Field.Length+1);counter++){
 		    if(counter != (packet.Field.Length)) {
-			packet.Field.data[counter] = mHardwareSerial->read();
+			packet.Field.data[counter] = mCommunicationStream->read();
 		    } else {
-			packet.Field.Sum = mHardwareSerial->read();
+			packet.Field.Sum = mCommunicationStream->read();
 		    }
 		}
 		if(checkPacketSum(packet) == true){
 		    processCommand(packet);
 		} else {
 		    // data that received might be broke -> flush
-		    mHardwareSerial->flush();
+		    mCommunicationStream->flush();
 		}
 		serial_receive_state = SRECV_IDLE;
 	    }
 	} else {
-	    if(mHardwareSerial->available() >= 1){
-		packet.Field.Sum = mHardwareSerial->read();
+	    if(mCommunicationStream->available() >= 1){
+		packet.Field.Sum = mCommunicationStream->read();
 		if(checkPacketSum(packet) == true){
 		    processCommand(packet);
 		} else {
 		    // data that received might be broke -> flush
-		    mHardwareSerial->flush();
+		    mCommunicationStream->flush();
 		}
 		serial_receive_state = SRECV_IDLE;
 	    }

@@ -7,6 +7,8 @@
 #include "testlibs.h"
 #endif
 
+#include "CommunicationStream.h"
+
 //
 //	MemoryMap Protocol Lib for Arduino
 //	Coded by Yasuhiro ISHII 17 Nov,2011
@@ -106,7 +108,7 @@ private:
     MEMMAP_Message packet;
     MEMMAP_Message packetReply;
     Command MemoryMapTable[MAX_NUMBER_OF_ADDRESSES];
-    HardwareSerial* mHardwareSerial;
+    CommunicationStream* mCommunicationStream;
 
     int checkPacketHeader(MEMMAP_Message& msg);
     int isReadOperation(MEMMAP_Message& msg);
@@ -124,7 +126,7 @@ public:
     int registerMapAddressVar(unsigned char address,unsigned char RWOP,unsigned char* ptr);
     int registerMapAddressBlock(Command* );
     int removeMapAddress(unsigned char address);
-    int setStreamInterface(HardwareSerial* );
+    int setStreamInterface(CommunicationStream* );
     MemoryMap();
 
 };
