@@ -1,8 +1,10 @@
 // Memory Map Protocol Library for Arduino
 //
 // Author : Yasuhiro ISHII
-// 2011/11/27 : Version 0.01	First release
 //
+// 2011/11/27 : Version 0.01	First release
+// 2011/12/24 : Version 0.02    Android Accessory supported.And,modified to have capable to fit for another interfaces.
+// 2012/01/25 : Version 0.03    Added to skip received data until receive first data marker(MEMMAP_HEADER1).
 //
 // The Memory-map protocol is originally created by JS Robotics.
 
@@ -278,6 +280,7 @@ void MemoryMap::poll(void)
     static SerialReceiveState serial_receive_state = SRECV_IDLE;
     static unsigned long startReceiveTime = 0;
     int counter;
+    unsigned char first;
 
     if(DETECT_TIMEOUT(startReceiveTime) == true){
 	serial_receive_state = SRECV_IDLE;
@@ -286,14 +289,18 @@ void MemoryMap::poll(void)
     switch(serial_receive_state){
     case SRECV_IDLE:
 	if(mCommunicationStream->available() != 0){
-	    serial_receive_state = SRECV_RECEIVING_HEADER;
-	    startReceiveTime = millis();
+	    first = mCommunicationStream->read();
+	    if(first == MEMMAP_HEADER1){
+		packet.Raw[0] = first;
+		serial_receive_state = SRECV_RECEIVING_HEADER;
+		startReceiveTime = millis();
+	    }
 	}
 	break;
 	
     case SRECV_RECEIVING_HEADER:
-	if(mCommunicationStream->available() >= 5){
-	    for(counter=0;counter<5;counter++){
+	if(mCommunicationStream->available() >= 4){
+	    for(counter=1;counter<5;counter++){
 		packet.Raw[counter] = mCommunicationStream->read();
 	    }
 	    if(checkPacketHeader(packet) == true){
