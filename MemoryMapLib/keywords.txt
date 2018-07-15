@@ -6,13 +6,13 @@
 # Datatypes (KEYWORD1)
 #######################################
 
-MemoryMap		KEYWORD1
+MemoryMap	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
 
-poll			KEYWORD2
+poll	KEYWORD2
 registerMapAddressJob	KEYWORD2
 registerMapAddressVar	KEYWORD2
 removeMapAddress	KEYWORD2
